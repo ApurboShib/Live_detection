@@ -79,13 +79,72 @@ class DetectionEngine:
                                     kconf = float(confs[j]) if confs is not None else 1.0
                                     kpts.append(Keypoint(x=float(xy[j][0]), y=float(xy[j][1]), confidence=kconf))
 
-                        all_detections.append(Detection(
-                            label=label,
-                            confidence=round(conf, 3),
-                            bounding_box=BoundingBox(x=x1, y=y1, width=w, height=h),
-                            detection_type="pose" if kpts else "object",
-                            keypoints=kpts
-                        ))
+                        if label != "person":
+                            label = "unknown object"
+                            all_detections.append(Detection(
+                                label=label,
+                                confidence=round(conf, 3),
+                                bounding_box=BoundingBox(x=x1, y=y1, width=w, height=h),
+                                detection_type="object",
+                                keypoints=None
+                            ))
+                        else:
+                            all_detections.append(Detection(
+                                label="Body",
+                                confidence=round(conf, 3),
+                                bounding_box=BoundingBox(x=x1, y=y1, width=w, height=h),
+                                detection_type="pose" if kpts else "object",
+                                keypoints=kpts
+                            ))
+                            
+                            if kpts:
+                                face_pts = [kpts[j] for j in range(5) if j < len(kpts) and kpts[j].confidence > 0.5]
+                                if face_pts:
+                                    fx_min = min(p.x for p in face_pts)
+                                    fx_max = max(p.x for p in face_pts)
+                                    fy_min = min(p.y for p in face_pts)
+                                    fy_max = max(p.y for p in face_pts)
+                                    
+                                    fw = max(fx_max - fx_min, 20)
+                                    fh = max(fy_max - fy_min, 20)
+                                    margin_w = fw * 0.5
+                                    margin_h = fh * 0.5
+                                    bx1, by1 = max(0, int(fx_min - margin_w)), max(0, int(fy_min - margin_h))
+                                    bx2, by2 = int(fx_max + margin_w), int(fy_max + margin_h)
+                                    
+                                    all_detections.append(Detection(
+                                        label="Face",
+                                        confidence=min(round(sum(p.confidence for p in face_pts)/len(face_pts), 3), 1.0),
+                                        bounding_box=BoundingBox(x=bx1, y=by1, width=bx2-bx1, height=by2-by1),
+                                        detection_type="face",
+                                        keypoints=None
+                                    ))
+                                
+                                if len(kpts) > 9 and kpts[9].confidence > 0.3:
+                                    kx, ky = kpts[9].x, kpts[9].y
+                                    hw = w * 0.15
+                                    hh = h * 0.1
+                                    bx1, by1 = max(0, int(kx - hw/2)), max(0, int(ky - hh/2))
+                                    all_detections.append(Detection(
+                                        label="Left Hand",
+                                        confidence=round(kpts[9].confidence, 3),
+                                        bounding_box=BoundingBox(x=bx1, y=by1, width=int(hw), height=int(hh)),
+                                        detection_type="object",
+                                        keypoints=None
+                                    ))
+
+                                if len(kpts) > 10 and kpts[10].confidence > 0.3:
+                                    kx, ky = kpts[10].x, kpts[10].y
+                                    hw = w * 0.15
+                                    hh = h * 0.1
+                                    bx1, by1 = max(0, int(kx - hw/2)), max(0, int(ky - hh/2))
+                                    all_detections.append(Detection(
+                                        label="Right Hand",
+                                        confidence=round(kpts[10].confidence, 3),
+                                        bounding_box=BoundingBox(x=bx1, y=by1, width=int(hw), height=int(hh)),
+                                        detection_type="object",
+                                        keypoints=None
+                                    ))
 
         output_frame = frame.copy() if annotate else frame
         if annotate:

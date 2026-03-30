@@ -333,6 +333,10 @@ with tab_live:
         frames_placeholder  = st.empty()
         detect_placeholder  = st.empty()
         status_placeholder  = st.empty()
+        
+        st.markdown("---")
+        st.markdown("### 🎯 In Frame")
+        current_det_placeholder = st.empty()
 
     with col_vid:
         frame_placeholder = st.empty()
@@ -401,6 +405,13 @@ with tab_live:
                 fps_placeholder.metric("FPS", f"{result.fps:.1f}", f"avg {avg_fps:.1f}")
                 frames_placeholder.metric("Frames", st.session_state.frame_count)
                 detect_placeholder.metric("Total Detections", st.session_state.total_detections)
+                
+                # Update current detections table
+                if result.detections:
+                    rows = [{"Label": d.label, "Conf": f"{d.confidence:.1%}"} for d in result.detections]
+                    current_det_placeholder.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+                else:
+                    current_det_placeholder.info("No items in view")
 
                 time.sleep(0.01)  # yield to Streamlit
 
