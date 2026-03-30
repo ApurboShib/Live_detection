@@ -103,7 +103,7 @@ def main():
                 
             frame = cv2.resize(frame, (width, height))
             
-            output_frame, result = engine.process_frame(frame, mode=state["mode"], annotate=False)
+            output_frame, result = engine.process_frame(frame, mode=state["mode"], annotate=True)
             
             # OpenCV blit for FPS and Detection count
             fps_text = f"FPS: {result.fps:.1f}"

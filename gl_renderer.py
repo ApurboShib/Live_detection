@@ -70,6 +70,10 @@ class GLRenderer:
         )
 
     def _init_gl(self):
+        # macOS Core Profile strict validation requirement
+        self._dummy_init_vao = gl.glGenVertexArrays(1)
+        gl.glBindVertexArray(self._dummy_init_vao)
+
         self.quad_shader = self._compile_shader(_VERT_QUAD, _FRAG_QUAD)
         self.flat_shader = self._compile_shader(_VERT_FLAT, _FRAG_FLAT)
 

@@ -1,0 +1,4 @@
+timestamp,frame_id,label,confidence,x,y,width,height,detection_type,fps
+2026-03-31 00:55:46.151669,2462,face,1.0,94,534,53,53,face,0.0
+2026-03-31 00:55:46.151685,2462,face,1.0,567,520,53,53,face,0.0
+2026-03-31 00:55:46.151689,2462,face,1.0,570,630,70,70,face,0.0
