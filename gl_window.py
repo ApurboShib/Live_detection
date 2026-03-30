@@ -51,7 +51,7 @@ def main():
 
     if initial_mode in (DetectionMode.OBJECT, DetectionMode.BOTH) and not args.no_yolo:
         print("Loading YOLO model...")
-        engine.load_yolo("yolov8n.pt")
+        engine.load_yolo("yolov8n-pose.pt")
 
     print("\nControls:")
     print("  ESC: Quit")

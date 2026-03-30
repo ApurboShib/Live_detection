@@ -7,7 +7,7 @@ import cv2
 import time
 import numpy as np
 from typing import Tuple, List, Optional
-from models import Detection, BoundingBox, FrameResult, DetectionMode, InputSource
+from models import Detection, BoundingBox, FrameResult, DetectionMode, InputSource, Keypoint
 
 
 # ──────────────────────────────────────────────
@@ -127,7 +127,7 @@ class DetectionEngine:
         detections = []
 
         for result in results:
-            for box in result.boxes:
+            for i, box in enumerate(result.boxes):
                 cls_id = int(box.cls[0])
                 label = self._yolo.names[cls_id]
                 conf = float(box.conf[0])
@@ -135,12 +135,25 @@ class DetectionEngine:
                 w = x2 - x1
                 h = y2 - y1
 
+                kpts = None
+                if hasattr(result, 'keypoints') and result.keypoints is not None and result.keypoints.xy is not None:
+                    # length of xy usually matches boxes length
+                    if len(result.keypoints.xy) > i:
+                        xy = result.keypoints.xy[i].cpu().numpy()
+                        confs = result.keypoints.conf[i].cpu().numpy() if result.keypoints.conf is not None else None
+                        
+                        kpts = []
+                        for j in range(len(xy)):
+                            kconf = float(confs[j]) if confs is not None else 1.0
+                            kpts.append(Keypoint(x=float(xy[j][0]), y=float(xy[j][1]), confidence=kconf))
+
                 detections.append(
                     Detection(
                         label=label,
                         confidence=round(conf, 3),
                         bounding_box=BoundingBox(x=x1, y=y1, width=w, height=h),
-                        detection_type="object",
+                        detection_type="pose" if kpts else "object",
+                        keypoints=kpts
                     )
                 )
         return detections
@@ -206,6 +219,25 @@ class DetectionEngine:
 
             # Bounding box
             cv2.rectangle(frame, (bb.x, bb.y), (bb.x + bb.width, bb.y + bb.height), color, 2)
+
+            # Skeleton keypoints
+            if hasattr(det, 'keypoints') and det.keypoints:
+                SKELETON_EDGES = [
+                    (15, 13), (13, 11), (11, 12), (12, 14), (14, 16),
+                    (11, 5), (12, 6), (5, 6), (5, 7), (7, 9), (6, 8), (8, 10),
+                    (1, 2), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6)
+                ]
+                for p_idx in range(len(det.keypoints)):
+                    kp = det.keypoints[p_idx]
+                    if kp.confidence > 0.5:
+                        cv2.circle(frame, (int(kp.x), int(kp.y)), 4, color, -1)
+                
+                for pt1, pt2 in SKELETON_EDGES:
+                    if pt1 < len(det.keypoints) and pt2 < len(det.keypoints):
+                        k1 = det.keypoints[pt1]
+                        k2 = det.keypoints[pt2]
+                        if k1.confidence > 0.5 and k2.confidence > 0.5:
+                            cv2.line(frame, (int(k1.x), int(k1.y)), (int(k2.x), int(k2.y)), color, 2)
 
             # Label background
             label_text = f"{det.label} {det.confidence:.0%}" if det.detection_type == "object" else "Face"

@@ -1,7 +1,3 @@
-"""
-models.py — Pydantic data models for detection results.
-All API requests/responses and internal data use these typed models.
-"""
 
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -9,9 +5,9 @@ from datetime import datetime
 from enum import Enum
 
 
-# ──────────────────────────────────────────────
+
 # Enums
-# ──────────────────────────────────────────────
+
 
 class DetectionMode(str, Enum):
     FACE = "face"
@@ -25,9 +21,9 @@ class InputSource(str, Enum):
     VIDEO = "video"
 
 
-# ──────────────────────────────────────────────
+
 # Core Detection Models
-# ──────────────────────────────────────────────
+
 
 class BoundingBox(BaseModel):
     """Bounding box coordinates (pixels)."""
@@ -36,13 +32,19 @@ class BoundingBox(BaseModel):
     width: int = Field(..., description="Box width in pixels")
     height: int = Field(..., description="Box height in pixels")
 
+class Keypoint(BaseModel):
+    """Skeleton keypoint coordinate."""
+    x: float
+    y: float
+    confidence: float
 
 class Detection(BaseModel):
     """A single detected object or face."""
     label: str = Field(..., description="Class label, e.g. 'person', 'car', 'face'")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score 0.0–1.0")
     bounding_box: BoundingBox
-    detection_type: str = Field(..., description="'face' or 'object'")
+    detection_type: str = Field(..., description="'face' or 'object' or 'pose'")
+    keypoints: Optional[List[Keypoint]] = None
     timestamp: datetime = Field(default_factory=datetime.now)
 
 
@@ -60,9 +62,9 @@ class FrameResult(BaseModel):
         self.total_detections = len(self.detections)
 
 
-# ──────────────────────────────────────────────
+
 # API Request / Response Models
-# ──────────────────────────────────────────────
+
 
 class DetectionRequest(BaseModel):
     """Request body for image-based detection via API."""

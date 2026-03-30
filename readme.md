@@ -1,5 +1,5 @@
 # Real-Time Face & Object Detection System
-**Joy Shib | 222-115-111 | Computer Graphics & Image Processing | March 2026**
+
 
 ---
 

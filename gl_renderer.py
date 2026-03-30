@@ -106,7 +106,7 @@ class GLRenderer:
         self.line_vbo = gl.glGenBuffers(1)
         gl.glBindVertexArray(self.line_vao)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.line_vbo)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, 1024 * 4, None, gl.GL_DYNAMIC_DRAW)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, 8192 * 4, None, gl.GL_DYNAMIC_DRAW)
         gl.glVertexAttribPointer(0, 2, gl.GL_FLOAT, gl.GL_FALSE, 2 * 4, gl.ctypes.c_void_p(0))
         gl.glEnableVertexAttribArray(0)
 
@@ -185,6 +185,30 @@ class GLRenderer:
             gl.glLineWidth(3.0)
             gl.glDrawArrays(gl.GL_LINES, 0, 16)
             gl.glLineWidth(1.0)
+
+            # Skeleton drawing
+            if hasattr(det, 'keypoints') and det.keypoints:
+                SKELETON_EDGES = [
+                    (15, 13), (13, 11), (11, 12), (12, 14), (14, 16),
+                    (11, 5), (12, 6), (5, 6), (5, 7), (7, 9), (6, 8), (8, 10),
+                    (1, 2), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6)
+                ]
+                sk_verts = []
+                for pt1, pt2 in SKELETON_EDGES:
+                    if pt1 < len(det.keypoints) and pt2 < len(det.keypoints):
+                        k1 = det.keypoints[pt1]
+                        k2 = det.keypoints[pt2]
+                        if k1.confidence > 0.5 and k2.confidence > 0.5:
+                            kx1, ky1 = self._pixel_to_ndc(k1.x, k1.y)
+                            kx2, ky2 = self._pixel_to_ndc(k2.x, k2.y)
+                            sk_verts.extend([kx1, ky1, kx2, ky2])
+                
+                if sk_verts:
+                    sk_arr = np.array(sk_verts, dtype=np.float32)
+                    gl.glBufferSubData(gl.GL_ARRAY_BUFFER, 0, sk_arr.nbytes, sk_arr)
+                    gl.glLineWidth(2.0)
+                    gl.glDrawArrays(gl.GL_LINES, 0, len(sk_arr) // 2)
+                    gl.glLineWidth(1.0)
 
     def render(self, frame, detections):
         gl.glClearColor(0.0, 0.0, 0.0, 1.0)
